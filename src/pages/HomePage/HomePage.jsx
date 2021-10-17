@@ -31,6 +31,7 @@ function HomePage() {
       querySnapshot.forEach((doc) => {
         const item = doc.data();
         const videoItem = {
+          id: doc.id,
           caption: item.caption,
           url: item.url,
           user: item.user,
@@ -66,6 +67,7 @@ function HomePage() {
             return (
               <Video
                 video={item}
+                index={index}
                 key={index}
                 pos={position === index ? true : false}
               />

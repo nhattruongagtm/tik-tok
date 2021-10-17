@@ -1,7 +1,6 @@
-import { addDoc, collection, getDocs } from "@firebase/firestore";
-import db from "../firebase/firebase";
+import { addDoc, collection, getDocs, doc, getDoc, updateDoc, increment, arrayUnion, arrayRemove } from "@firebase/firestore";
 import md5 from "md5";
-import { useHistory } from "react-router";
+import db from "../firebase/firebase";
 
 // hiển thị danh sách tất cả users
 export async function getAllAccount() {
@@ -12,6 +11,7 @@ export async function getAllAccount() {
     const userSnap = doc.data();
 
     const user = {
+      id: doc.id,
       username: userSnap.username,
       password: userSnap.password,
       avatar: userSnap.avatar,
@@ -21,6 +21,7 @@ export async function getAllAccount() {
       followers: userSnap.followers,
       likes: userSnap.likes,
       bio: userSnap.bio,
+      likedVideos: userSnap.likedVideos,
     };
 
     users.push(user);
@@ -94,4 +95,55 @@ export async function postVideo(post) {
     console.log(e);
     alert("Đã xảy ra lỗi, vui lòng thử lại!");
   }
+}
+
+export async function likeVideo(user,id) {
+  const likeRef = doc(db, "videos", id);
+  const userRef = doc(db, "users", user);
+
+  await updateDoc(likeRef,{
+    like: increment(1),
+  })
+
+  await updateDoc(userRef,{
+    likedVideos: arrayUnion(id),
+  })
+
+  // JSON.stringify(localStorage.getItem('userTiktok'),user);
+
+}
+export async function unLikeVideo(user,id) {
+  const userRef = doc(db, "users", user);
+  const likeRef = doc(db, "videos", id);
+
+  await updateDoc(likeRef,{
+    like: increment(-1),
+  })
+
+  await updateDoc(userRef,{
+    likedVideos: arrayRemove(id),
+  })
+}
+export async function likeVideosNotUser(id) {
+  const likeRef = doc(db, "videos", id);
+
+  await updateDoc(likeRef,{
+    like: increment(1),
+  })
+
+  // JSON.stringify(localStorage.getItem('userTiktok'),user);
+
+}
+export async function unLikeVideosNotUser(id) {
+  const likeRef = doc(db, "videos", id);
+
+  await updateDoc(likeRef,{
+    like: increment(-1),
+  })
+}
+
+export async function getUserByID(id){
+  const userRef = await getDoc(doc(db,"users",id));
+  const data = userRef.data();
+  return data;
 }

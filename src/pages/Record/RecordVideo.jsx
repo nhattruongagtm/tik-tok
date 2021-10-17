@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { render } from "react-dom";
-import { useHistory } from "react-router";
+import { Redirect, useHistory } from "react-router";
 import VideoRecorder from "react-video-recorder";
 import ChooseAudioItem from "../../components/ChooseAudioItem";
 import { postVideo } from "../../utils/database";
@@ -15,23 +15,15 @@ export default function RecordVideo() {
   const [openVideo, setOpenVideo] = useState(false);
   const [displayOpen, setDisplayOpen] = useState(true);
   const [urlVideoInput, setUrlVideoInput] = useState(null);
-  const [user,setUser] = useState(null);
+
+  const u = localStorage.getItem("userTiktok")
+    ? JSON.parse(localStorage.getItem("userTiktok") ): null;
+
   const [song, setSong] = useState({
     name: "Thêm âm thanh",
     url: null,
     pos: -1,
   });
-
-  useEffect(()=>{
-    const user = localStorage.getItem("userTiktok") ? JSON.parse(localStorage.getItem("userTiktok")) : null;
-    setUser(user);
-
-    setPost({
-      ...post,
-      username: user.nickName,
-      avatar: user.avatar,
-    })
-  },[]);
   const [post, setPost] = useState({
     url: null,
     caption: "",
@@ -39,7 +31,9 @@ export default function RecordVideo() {
     avatar: "",
     urlSong: song.url,
     nameSong: song.name,
+    status: 1,
   });
+
   const [displayPost, setDisplayPost] = useState(false);
 
   const handleSendIndex = (index) => {
@@ -120,7 +114,10 @@ export default function RecordVideo() {
   ];
 
   const handlePostVideo = () => {
-    postVideo(post).then((value) => {
+    const p = [...post];
+    p.username = u.nickName;
+    p.avatar = u.avatar;
+    postVideo(p).then((value) => {
       if (value) {
         alert("Đăng video thành công!");
         history.push("/");
@@ -141,6 +138,10 @@ export default function RecordVideo() {
     });
     setDisplayPost(true);
   };
+  
+  if(u === null){
+    return <Redirect to="/profile"/>
+  }
 
   return (
     <div className="record__main">
@@ -154,15 +155,9 @@ export default function RecordVideo() {
           isOnInitially={true}
           useVideoInput={true}
           onRecordingComplete={(videoBlob) => {
-            console.log(videoBlob)
+            console.log(videoBlob);
             // Do something with the video...
             try {
-              // const bloba = {
-              //   size: 21825694,
-              //   type: "",
-              // };
-              // let blobUrla = URL.createObjectURL(new B);
-              // console.log("AAA: ", videoBlob);
 
               let blob = new Blob([videoBlob]);
               let blobUrl = URL.createObjectURL(blob);

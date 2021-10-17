@@ -1,9 +1,63 @@
 import React, { useEffect, useRef, useState } from "react";
+import {
+  likeVideo,
+  unLikeVideo,
+  likeVideosNotUser,
+  unLikeVideosNotUser,
+  getUserByID,
+} from "../utils/database";
 
 export default function Video(props) {
+  let [user, setUser] = useState(() => {
+    if (localStorage.getItem("userTiktok")) {
+      return JSON.parse(localStorage.getItem("userTiktok"));
+    } else {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    if (user !== null) {
+      getUserByID(user.id)
+        .then((res) => {
+          console.log(res);
+          
+          setUser({
+            ...user,
+            likedVideos: res.likedVideos,
+            id: user.id,
+          });
+
+          localStorage.setItem("userTiktok", JSON.stringify(user));
+
+          console.log(res);
+        })
+        .catch((e) => {
+          console.error(e);
+        });
+    }
+  }, [user]);
+
+  console.log(user);
+
   const videoRef = useRef(null);
   const [playing, setPlaying] = useState(false);
-  const [like, setLike] = useState(false);
+  const [like, setLike] = useState(() => {
+    if (user !== null) {
+      const index = user.likedVideos.findIndex((item) => {
+        return item === props.video.id;
+      });
+
+      if (index === -1) {
+        return false;
+      } else {
+        return true;
+      }
+    } else {
+      return false;
+    }
+  });
+  const [likes, setLikes] = useState(props.video.like);
 
   useEffect(() => {
     if (props.pos === true) {
@@ -32,21 +86,50 @@ export default function Video(props) {
     setPlaying(true);
   };
   const handleLike = () => {
+    const l = !like;
+    if (user !== null) {
+      l === true ? likeVideos() : unLikeVideos();
+    } else {
+      l === true ? likeVideoNotUser() : unLikeVideoNotUser();
+    }
+
     setLike(!like);
+
+    l === true ? setLikes(likes + 1) : setLikes(likes - 1);
   };
 
-  const converToBase64 = (blob) => {
-    var reader = new FileReader();
-    reader.readAsDataURL(blob);
-    reader.onloadend = function () {
-      var base64data = reader.result;
-      // console.log("base64", base64data);
-
-      return base64data;
-    };
+  const likeVideos = () => {
+    if (user !== null) {
+      likeVideo(user.id, video.id).catch((e) => {
+        console.log(e);
+      });
+    }
   };
 
-  
+  const unLikeVideos = () => {
+    if (user !== null) {
+      unLikeVideo(user.id, video.id).catch((e) => {
+        console.log(e);
+      });
+    }
+  };
+  const likeVideoNotUser = () => {
+    if (user === null) {
+      likeVideosNotUser(video.id).catch((e) => {
+        console.log(e);
+      });
+    }
+  };
+  const unLikeVideoNotUser = () => {
+    if (user === null) {
+      unLikeVideosNotUser(video.id).catch((e) => {
+        console.log(e);
+      });
+    }
+  };
+  // useEffect(() => {
+  //   like === true ? likeVideos() : unLikeVideos()
+  // },[like]);
 
   const { video } = props;
 
@@ -61,7 +144,7 @@ export default function Video(props) {
         autoPlay={props.pos}
         loop
       >
-        <source type="video/webm" src={video.url} ></source>
+        <source type="video/webm" src={video.url}></source>
       </video>
       <div className="item__sidebar">
         <div className="item__sidebar__avatar">
@@ -80,7 +163,8 @@ export default function Video(props) {
             <i className="fas fa-heart" onClick={handleLike}></i>
           )}
           <div className="item__sidebar--social--number">
-            {like ? Number.parseInt(video.like) + 1 : video.like}
+            {/* {like ? Number.parseInt(video.like) + 1 : video.like} */}
+            {likes}
           </div>
         </div>
         <div className="item__sidebar__likes item__sidebar--social">
