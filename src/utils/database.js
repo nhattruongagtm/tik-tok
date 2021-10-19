@@ -147,3 +147,66 @@ export async function getUserByID(id){
   const data = userRef.data();
   return data;
 }
+
+export async function getVideosByID(id){
+  const videoRef = await getDoc(doc(db,"videos",id));
+  const post = videoRef.data();
+  const ids = videoRef.id;
+  const newPost = {
+    id: ids,
+    avatar: post.avatar,
+    caption: post.caption,
+    cmt: post.cmt,
+    nameSong: post.nameSong,
+    like: post.like,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    share: post.share,
+    url: post.url,
+    urlSong: post.urlSong,
+    user: post.username,
+  };
+  return newPost;
+}
+
+export async function getLikedVideosByUser(id){
+  const videoRef = await getDoc(doc(db,"users",id));
+
+  // get ids liked videos of user
+  const videosID = videoRef.data().likedVideos;
+
+  const videos = [];
+  for(let i = 0; i < videosID.length;i++){
+      videos.push(await getVideosByID(videosID[i]));
+  }
+  return videos;
+}
+export async function getPostedVideosByUser(user,stt){
+  const videoRef = await getDocs(collection(db,"videos"));
+  const videos = [];
+
+  videoRef.forEach((doc)=>{
+    const post = doc.data();
+    const id = doc.id;
+    if(post.user === user && post.status === stt){
+      const newPost = {
+        id: id,
+        avatar: post.avatar,
+        caption: post.caption,
+        cmt: post.cmt,
+        nameSong: post.nameSong,
+        like: post.like,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        share: post.share,
+        url: post.url,
+        urlSong: post.urlSong,
+        user: post.username,
+      };
+      videos.push(newPost);
+    }
+  }) 
+ return videos;
+}
+
+

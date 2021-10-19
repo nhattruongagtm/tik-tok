@@ -4,24 +4,57 @@ import { useHistory } from "react-router";
 import Accounts from "../../components/Accounts";
 import NavigationBottom from "../../components/NavigationBottom";
 import db from "../../firebase/firebase";
+import { getLikedVideosByUser, getPostedVideosByUser } from "../../utils/database";
 import ProfileVideoItem from "./ProfileVideoItem";
 
 export default function Profile() {
   const [tab, setTab] = useState(0);
+  const tabValue = ['posted','liked','hidden'];
   const [displayLogin, setDisplayLogin] = useState(false);
-  const [user,setUser] = useState(null);
+  const [user,setUser] = useState(()=>{
+    if(localStorage.getItem("userTiktok")){
+      return JSON.parse(localStorage.getItem("userTiktok"))
+    }
+    else{
+      return null;
+    }
+  });
   const history = useHistory();
   const [isLogout,setIsLogout] = useState();
+  const [likedVideos,setLikedVideos] = useState([]);
+  const [postedVideos,setPostedVideos] = useState([]);
+  const [postedHiddenVideos,setPostedHiddenVideos] = useState([]);
+
+  useEffect(()=>{
+    if(user !== null){
+      getLikedVideosByUser(user.id).then(res=>{
+        setLikedVideos(res);
+        // console.log(res)
+      })
+    }
+    if(user !== null){
+      getPostedVideosByUser(user.nickName,1).then(res=>{
+        setPostedVideos(res);
+        // console.log(res)
+      })
+    }
+    if(user !== null){
+      getPostedVideosByUser(user.nickName,0).then(res=>{
+        setPostedHiddenVideos(res);
+        // console.log(res)
+      })
+    }
+
+  },[]);
 
 
   useEffect(() => {
 
-    const user = localStorage.getItem("userTiktok")
+    const u = localStorage.getItem("userTiktok")
     ? JSON.parse(localStorage.getItem("userTiktok"))
     : null;
 
-    setUser(user);
-    
+    setUser(u);
   }, [isLogout]);
 
   const handleChangeTab = (pos) => {
@@ -64,6 +97,8 @@ export default function Profile() {
     history.push('/profile')
     setIsLogout(true);
   };
+
+  console.log("l",likedVideos) 
 
   return (
     <>
@@ -188,24 +223,29 @@ export default function Profile() {
               {tab === 0 && (
                 <div className="profile__videos--me--scroll">
                   <div className="profile__videos--me">
-                    <ProfileVideoItem />
-                    <ProfileVideoItem />
+                    {postedVideos.length > 0 && postedVideos.map((item,index)=>{
+                      return <ProfileVideoItem video={item} key={index} type={tabValue[0]} pos={index}/>
+                    })}
+                   
                   </div>
                 </div>
               )}
               {tab === 1 && (
                 <div className="profile__videos--me--scroll">
-                  <div className="profile__videos--me">
-                    <ProfileVideoItem />
-                    <ProfileVideoItem />
-                    <ProfileVideoItem />
+                  <div className="profile__videos--me"> 
+                  {likedVideos.length > 0 && likedVideos.map((item,index)=>{
+                    return <ProfileVideoItem video={item} key={index} type={tabValue[1]} pos={index}/>
+                  })}
+                    
                   </div>
                 </div>
               )}
               {tab === 2 && (
                 <div className="profile__videos--me--scroll">
                   <div className="profile__videos--me">
-                    <ProfileVideoItem />
+                  {postedHiddenVideos.length > 0 && postedHiddenVideos.map((item,index)=>{
+                      return <ProfileVideoItem video={item} key={index} type={tabValue[2]} pos={index}/>
+                    })}
                   </div>
                 </div>
               )}

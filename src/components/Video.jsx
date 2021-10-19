@@ -20,8 +20,7 @@ export default function Video(props) {
     if (user !== null) {
       getUserByID(user.id)
         .then((res) => {
-          console.log(res);
-          
+
           setUser({
             ...user,
             likedVideos: res.likedVideos,
@@ -30,15 +29,15 @@ export default function Video(props) {
 
           localStorage.setItem("userTiktok", JSON.stringify(user));
 
-          console.log(res);
         })
         .catch((e) => {
           console.error(e);
         });
+
+        
     }
   }, [user]);
 
-  console.log(user);
 
   const videoRef = useRef(null);
   const [playing, setPlaying] = useState(false);

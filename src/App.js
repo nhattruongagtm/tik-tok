@@ -6,6 +6,7 @@ import Intro from "./components/Intro";
 import HomePage from "./pages/HomePage/HomePage";
 import Profile from "./pages/Profile.jsx/Profile";
 import RecordVideo from "./pages/Record/RecordVideo";
+import VideoProfile from "./pages/Profile.jsx/VideoProfile";
 
 function App() {
   const [intro, setIntro] = useState(true);
@@ -28,6 +29,9 @@ function App() {
           </Switch>
           <Switch>
             <RecordVideo path="/record" />
+          </Switch>
+          <Switch>
+            <VideoProfile path="/video-profile" />
           </Switch>
         </Route>
       </div>

@@ -5,6 +5,7 @@ import Slider from "react-slick";
 import { collection, getDocs } from "@firebase/firestore";
 import db from "../../firebase/firebase";
 import Loading from "../../components/Loading";
+import VideoPlay from "../../components/VideoPlay";
 
 function HomePage() {
   const [position, setPosition] = useState(0);
@@ -61,19 +62,7 @@ function HomePage() {
       {
         loadding && <Loading/>
       }
-      <Slider className="videos" {...settings}>
-        {videos.length > 0 &&
-          videos.map((item, index) => {
-            return (
-              <Video
-                video={item}
-                index={index}
-                key={index}
-                pos={position === index ? true : false}
-              />
-            );
-          })}
-      </Slider>
+      <VideoPlay videos={videos} position={position} settings={settings}/>
       <NavigationBottom />
     </>
   );
