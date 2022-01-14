@@ -270,6 +270,21 @@ $primary: rgb(255, 0, 106);
             }
           }
         }
+        .reply__see__more{
+          font-size: 13px;
+          display: block;
+          margin-top: 5px;
+          cursor: pointer;
+          
+          i{
+            margin-left: 5px;
+            font-size: inherit;
+          }
+
+          &:hover{
+            font-weight: 600;
+          }
+        }
 
         &--rep {
           // background-color: #adadad;

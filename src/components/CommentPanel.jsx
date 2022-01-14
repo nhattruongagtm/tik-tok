@@ -2,9 +2,7 @@ import { doc, onSnapshot } from "@firebase/firestore";
 import React, { useEffect, useRef, useState } from "react";
 import db from "../firebase/firebase";
 import {
-  commentVideos,
-  getMessageByVideos,
-  getMessageByVideos2,
+  commentVideos, replyCommentVideos
 } from "../utils/database";
 import Comment from "./Comment";
 
@@ -39,6 +37,7 @@ export default function CommentPanel(props) {
   const [commentsSkeleton, setCommentSkeleton] = useState(0);
   const cmtRef = useRef();
   const [isReply, setIsReply] = useState(false);
+  const [replyObject,setreplyObject] = useState({});
   useEffect(() => {
     let isCancel = false;
     const getComments = async () => {
@@ -69,20 +68,20 @@ export default function CommentPanel(props) {
   };
 
   async function handleComment() {
+    const obj = {
+      id: !isReply ? `${user.id}-${video.id}-${Date.now()}` : replyObject.id,
+      user: user.id,
+      name: user.name,
+      videoID: video.id,
+      msg: comment,
+      like: 0,
+      avatar: user.avatar,
+      isAuth: user.nickName === video.user ? true : false,
+    };
     if (comment.trim() !== "") {
       // comments not reply
+      if (user != null) {
       if (!isReply) {
-        if (user != null) {
-          const obj = {
-            id: `${user.id}-${Date.now()}`,
-            user: user.id,
-            name: user.name,
-            videoID: video.id,
-            msg: comment,
-            like: 0,
-            avatar: user.avatar,
-            isAuth: user.nickName === video.user ? true : false,
-          };
           try {
             await commentVideos(obj);
             setCmtCount(cmtCount + 1);
@@ -90,13 +89,18 @@ export default function CommentPanel(props) {
             alert("Đã xảy ra lỗi, vui lòng thử lại!");
           }
           // props.updateComment(true);
-        } else {
-          alert("Vui lòng đăng nhập!");
         }
-      }
-      // is reply comments
-      else{
-        console.log("reply")
+        // is reply comments
+        else{
+          try {
+            await replyCommentVideos(obj);
+
+          } catch (e) {
+            alert("Đã xảy ra lỗi, vui lòng thử lại!")
+          }
+        }
+      } else {
+        alert("Vui lòng đăng nhập!");
       }
       setComment("");
     }
@@ -109,6 +113,7 @@ export default function CommentPanel(props) {
     setComment(cmt.name + " ");
     cmtRef.current.focus();
     setIsReply(true);
+    setreplyObject(cmt);
   };
 
   return (

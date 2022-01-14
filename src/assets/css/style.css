@@ -351,6 +351,22 @@
   color: #ff006a;
 }
 
+.app .video__main .profile__cmt--main .reply__see__more {
+  font-size: 13px;
+  display: block;
+  margin-top: 5px;
+  cursor: pointer;
+}
+
+.app .video__main .profile__cmt--main .reply__see__more i {
+  margin-left: 5px;
+  font-size: inherit;
+}
+
+.app .video__main .profile__cmt--main .reply__see__more:hover {
+  font-weight: 600;
+}
+
 .app .video__main .profile__cmt--main--rep {
   width: 85%;
   -ms-flex-pack: distribute;

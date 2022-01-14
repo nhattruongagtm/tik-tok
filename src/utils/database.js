@@ -353,6 +353,28 @@ export async function unfollow(uid, pid) {
 
 // *********************************** commnents **********************************
 
+export async function replyCommentVideos(c) {
+  const comment = {
+    user: c.user,
+    content: c.msg,
+    date: Date.now(),
+    like: c.like,
+    id: c.id,
+    videoID: c.videoID,
+    name: c.name,
+    avatar: c.avatar,
+    isAuth: c.isAuth,  
+  };
+  try {
+    const commentRef = await doc(db, "reply", c.id);
+
+    updateDoc(commentRef, {
+      rep: arrayUnion(comment),
+    });
+  } catch (error) {
+    console.log(error);
+  }
+}
 export async function commentVideos(c) {
   const comment = {
     user: c.user,
