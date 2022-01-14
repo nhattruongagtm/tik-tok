@@ -1,9 +1,15 @@
-import React, { useEffect, useState } from "react";
-import { render } from "react-dom";
+import { getDownloadURL, ref, uploadBytes } from "@firebase/storage";
+import React, { useState } from "react";
+import { useSelector } from "react-redux";
 import { Redirect, useHistory } from "react-router";
 import VideoRecorder from "react-video-recorder";
 import ChooseAudioItem from "../../components/ChooseAudioItem";
-import { postVideo } from "../../utils/database";
+import { storage } from "../../firebase/firebase";
+import {
+  createBlankComment,
+  getAllVideos,
+  postHelper
+} from "../../utils/database";
 
 export default function RecordVideo() {
   const history = useHistory();
@@ -15,12 +21,14 @@ export default function RecordVideo() {
   const [openVideo, setOpenVideo] = useState(false);
   const [displayOpen, setDisplayOpen] = useState(true);
   const [urlVideoInput, setUrlVideoInput] = useState(null);
+  const [blob, setBlob] = useState("");
+  const [statusVideo, setStatusVideo] = useState(1);
+  const [isLoadingPost, setIsLoadingPost] = useState(false);
 
-  const u = localStorage.getItem("userTiktok")
-    ? JSON.parse(localStorage.getItem("userTiktok") ): null;
+  const u = useSelector((state)=>state.session.user);
 
   const [song, setSong] = useState({
-    name: "Thêm âm thanh",
+    name: null,
     url: null,
     pos: -1,
   });
@@ -32,6 +40,7 @@ export default function RecordVideo() {
     urlSong: song.url,
     nameSong: song.name,
     status: 1,
+    userID: u ? u.id : null,
   });
 
   const [displayPost, setDisplayPost] = useState(false);
@@ -114,18 +123,74 @@ export default function RecordVideo() {
   ];
 
   const handlePostVideo = () => {
-    const p = [...post];
+    const p = post;
     p.username = u.nickName;
     p.avatar = u.avatar;
-    postVideo(p).then((value) => {
-      if (value) {
-        alert("Đăng video thành công!");
-        history.push("/");
-      } else {
-        alert("Đăng video thất bại!");
-      }
-    });
+    p.status = statusVideo;
+    if (p.nameSong === null) {
+      p.nameSong = `🎵 Nhạc nền - ${u.name}`;
+    }
+
+    console.log(p);
+    postVideo(p);
   };
+
+  async function postVideo(post) {
+    let id = 0;
+    await getAllVideos().then((ID) => {
+      id = ID + 1;
+    });
+    setIsLoadingPost(true);
+
+    const url = `${post.username}/video${id}${Date.now()}.mp4`;
+
+    const storeRef = ref(storage, url);
+
+    uploadBytes(storeRef, post.url)
+      .then((snapshot) => {
+        console.log(snapshot);
+
+        getDownloadURL(ref(storeRef)).then((res) => {
+          console.log(res);
+
+          const newPost = {
+            avatar: post.avatar,
+            caption: post.caption,
+            cmt: 0,
+            nameSong: post.nameSong,
+            like: 0,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            share: 0,
+            url: res,
+            urlSong: post.urlSong,
+            user: post.username,
+            status: post.status,
+            userID: post.userID,
+          };
+
+          postHelper(newPost).then((res) => {
+            console.log(res);
+            if (res) {
+              createBlankComment(res).then(() => {
+                // alert("Đăng video thành công!");
+              });
+              setIsLoadingPost(false);
+
+              alert("Đăng video thành công!");
+              setTimeout(() => {
+                history.push("/profile");
+              }, 200);
+            } else {
+              alert("Đã xảy ra lỗi, vui lòng thử lại!");
+            }
+          });
+        });
+      })
+      .catch((e) => {
+        console.log("error", e);
+      });
+  }
 
   const handleOpenVideo = () => {
     setOpenVideo(true);
@@ -138,10 +203,12 @@ export default function RecordVideo() {
     });
     setDisplayPost(true);
   };
-  
-  if(u === null){
-    return <Redirect to="/profile"/>
+
+  if (u === null) {
+    return <Redirect to="/profile" />;
   }
+
+  console.log("radio", statusVideo);
 
   return (
     <div className="record__main">
@@ -158,11 +225,16 @@ export default function RecordVideo() {
             console.log(videoBlob);
             // Do something with the video...
             try {
+              console.log(videoBlob);
+              // videoBlob.type = 'video/mp4';
 
-              let blob = new Blob([videoBlob]);
+              let blob = new Blob([videoBlob], { type: "video/mp4" });
               let blobUrl = URL.createObjectURL(blob);
-              // console.log("url_open: ", blob);
+              setBlob(blobUrl);
+              console.log("url_open: ", blob);
               setComplete(true);
+
+              setUrlVideoInput(blob);
 
               var reader = new FileReader();
               reader.readAsDataURL(blob);
@@ -170,7 +242,7 @@ export default function RecordVideo() {
                 var base64data = reader.result;
                 console.log("base64", base64data);
 
-                setUrlVideoInput(base64data);
+                // setUrlVideoInput(base64data);
               };
             } catch (e) {
               console.error(e);
@@ -189,7 +261,7 @@ export default function RecordVideo() {
                   className="back__video--open"
                   onClick={() => setOpenVideo(false)}
                 >
-                  <i class="fas fa-arrow-left"></i>Quay về
+                  <i className="fas fa-arrow-left"></i>Quay về
                 </div>
               </>
             );
@@ -219,14 +291,17 @@ export default function RecordVideo() {
         onRecordingComplete={(videoBlob) => {
           // Do something with the video...
           try {
-            let blob = new Blob([videoBlob]);
+            // videoBlob.type = 'video/mp4';
+            let blob = new Blob([videoBlob], { type: "video/mp4" });
             let blobUrl = URL.createObjectURL(blob);
+            setBlob(blobUrl);
             console.log("AAA: ", videoBlob);
             setComplete(true);
-            // setPost({
-            //   ...post,
-            //   url: blobUrl,
-            // });
+
+            setPost({
+              ...post,
+              url: blob,
+            });
 
             var reader = new FileReader();
             reader.readAsDataURL(blob);
@@ -235,10 +310,10 @@ export default function RecordVideo() {
 
               console.log("base64", base64data);
 
-              setPost({
-                ...post,
-                url: base64data,
-              });
+              // setPost({
+              //   ...post,
+              //   url: base64data,
+              // });
             };
           } catch (e) {
             console.error(e);
@@ -313,7 +388,7 @@ export default function RecordVideo() {
       />
       <div className="add__audio" onClick={handleDisplayAudio}>
         <i className="fas fa-headphones-alt"></i>
-        <span>{song.name}</span>
+        <span>{song.name || "Thêm âm thanh"}</span>
       </div>
       <div
         className={
@@ -333,7 +408,7 @@ export default function RecordVideo() {
           <div className="record__audio__header--item"></div>
         </div>
         <div className="record__audio__search">
-          <i class="fas fa-search"></i>
+          <i className="fas fa-search"></i>
           <input type="text" placeholder="Tìm kiếm" />
         </div>
         <div className="record__audio__carousel"></div>
@@ -370,9 +445,42 @@ export default function RecordVideo() {
           <div className="post__title">Đăng Video</div>
           <div className="post__label">Nhập tiêu đề:</div>
           <input value={post.caption} onChange={handleCaption} />
-          <video className="post__video" autoPlay loop>
-            <source type="video/webm" src={post.url}></source>
+          <video className="post__video" autoPlay loop playsInline>
+            <source type="video/webm" src={blob}></source>
           </video>
+          <div className="post__status">
+            <div className="post__status--title">Trạng thái:</div>
+            <div className="post__status--parent">
+              <label htmlFor="private" className="post__status--item">
+                <input
+                  className=""
+                  type="radio"
+                  name="status"
+                  id="private"
+                  checked={statusVideo === 0 ? true : false}
+                  value={0}
+                  onChange={(e) =>
+                    setStatusVideo(Number.parseInt(e.target.value))
+                  }
+                />
+                <span>Riêng tư</span>
+              </label>
+              <label htmlFor="public" className="post__status--item">
+                <input
+                  className=""
+                  type="radio"
+                  name="status"
+                  id="public"
+                  checked={statusVideo === 1 ? true : false}
+                  value={1}
+                  onChange={(e) =>
+                    setStatusVideo(Number.parseInt(e.target.value))
+                  }
+                />
+                <span>Công khai</span>
+              </label>
+            </div>
+          </div>
           <div className="post__btn">
             <div
               className="post__btn--back"
@@ -384,6 +492,22 @@ export default function RecordVideo() {
               Đăng
             </div>
           </div>
+          {isLoadingPost && (
+            <>
+              <div className="post__layer"></div>
+              <div className="post__loading">
+                <lottie-player
+                  className="post__loading--child"
+                  src="https://assets7.lottiefiles.com/packages/lf20_hvngxp8a.json"
+                  background="transparent"
+                  speed="1"
+                  loop
+                  autoplay
+                ></lottie-player>
+                <span>Đang tải video...</span>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>

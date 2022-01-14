@@ -5,7 +5,7 @@ export default function ProfileVideoItem(props) {
   const { video, type, pos} = props;
   const history = useHistory();
   const handleDetailVideo = () => {
-    history.push(`/video-profile?type=${type}&pos=${pos}`);
+    history.push(`/video-profile?id=${video.userID}&type=${type}&pos=${pos}`);
   };
   return (
     <div className="profile__videos--item" onClick={handleDetailVideo}>

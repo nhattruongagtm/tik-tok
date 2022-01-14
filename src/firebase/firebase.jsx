@@ -1,6 +1,5 @@
-
-
 // Import the functions you need from the SDKs you need
+import { getStorage } from "@firebase/storage";
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 // TODO: Add SDKs for Firebase products that you want to use
@@ -15,14 +14,14 @@ const firebaseConfig = {
   storageBucket: "t-tiktok.appspot.com",
   messagingSenderId: "29922305899",
   appId: "1:29922305899:web:08a778850fba1a70084e2e",
-  measurementId: "G-EYMTV41W4X"
+  measurementId: "G-EYMTV41W4X",
+  databaseURL: "https://databaseName.firebaseio.com",
 };
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+export const app = initializeApp(firebaseConfig);
 
-
-const db = getFirestore();
-
+const db = getFirestore(app);
+export const storage = getStorage(app);
 
 export default db;

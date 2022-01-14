@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from "react";
+import AccountLoginItem from "./AccountLoginItem";
 import LoginForm from "./LoginForm";
 import SignUpForm from "./SignUpForm";
 
 export default function Accounts() {
   const [statusAuth, setStatusAuth] = useState(0);
   const [statusBar, setStatusBar] = useState(true);
+  const accountsLoggedIn = localStorage.getItem("saveLogin") ? JSON.parse(localStorage.getItem("saveLogin")) : [];
+
 
   const handleChangeStatusAuth = (value) => {
     switch (Number.parseInt(value)) {
@@ -28,9 +31,9 @@ export default function Accounts() {
     <>
       <div className="login__header">
         <label htmlFor="signup">
-          <i class="fas fa-times"></i>
+          <i className="fas fa-times"></i>
         </label>
-        <i class="far fa-question-circle"></i>
+        <i className="far fa-question-circle"></i>
       </div>
       <div className="login__accounts">
         <div className="login__accounts--title">Chọn tài khoản</div>
@@ -41,24 +44,17 @@ export default function Accounts() {
               className="login__accounts--list--item default"
               onClick={() => handleChangeStatusAuth(1)}
             >
-              <i class="fas fa-plus"></i>
+              <i className="fas fa-plus"></i>
               <div>Thêm tài khoản hiện có</div>
             </label>
-            <div className="login__accounts--list--item">
-              <div className="login__accounts--list--item--img">
-                <img
-                  src="https://pdp.edu.vn/wp-content/uploads/2021/05/hinh-anh-avatar-de-thuong.jpg"
-                  alt=""
-                />
-              </div>
-              <div className="login__accounts--list--item--name">
-                <div>@Trường</div>
-                <div>Hoạt động 5 phút trước</div>
-              </div>
-              <div className="login__accounts--list--item--setting">
-                <i className="fas fa-ellipsis-h"></i>
-              </div>
-            </div>
+            {
+              accountsLoggedIn && accountsLoggedIn.map((item,index)=>{
+                return (
+                  <AccountLoginItem key={index} user={item}/>
+                )
+              })
+              
+            }
           </div>
         </div>
         {statusBar === true && (
@@ -87,6 +83,7 @@ export default function Accounts() {
         type="checkbox"
         id="login__api"
         hidden
+        onChange={()=>true}
         checked={statusAuth === 1 ? true : false}
       />
       <div className="login__api">
@@ -160,7 +157,7 @@ export default function Accounts() {
           </div>
         </div>
       </div>
-      <input type="checkbox" id="login__popup" hidden />
+      <input type="checkbox" id="login__popup" hidden onChange={()=> true} />
       <LoginForm />
       <label
         htmlFor="login__popup"
@@ -171,6 +168,7 @@ export default function Accounts() {
         type="checkbox"
         id="signup__api"
         hidden
+        onChange={()=>true}
         checked={statusAuth === 2 ? true : false}
       />
       <div className="signup__api">
@@ -231,28 +229,10 @@ export default function Accounts() {
             </div>
             <div className="login__api--list--item--blank"></div>
           </div>
-          {/* <div className="login__api--list--item">
-            <div className="login__api--list--item--icon">
-              <i class="far fa-user"></i>
-            </div>
-            <div className="login__api--list--item--name">
-              Tiếp tục với Twitter
-            </div>
-            <div className="login__api--list--item--blank"></div>
-          </div> */}
-          {/* <div className="login__api--list--item">
-            <div className="login__api--list--item--icon">
-              <i class="far fa-user"></i>
-            </div>
-            <div className="login__api--list--item--name">
-              Tiếp tục với Line
-            </div>
-            <div className="login__api--list--item--blank"></div>
-          </div> */}
         </div>
       </div>
-      <input type="checkbox" id="signup__popup" hidden />
-      <SignUpForm toogleStatusBar={handleToogleStatusBar} />
+      <input type="checkbox" id="signup__popup" hidden onChange={()=>true} />
+      <SignUpForm toogleStatusBar={handleToogleStatusBar}/>
       <label
         htmlFor="signup__popup"
         className="signup__layer"

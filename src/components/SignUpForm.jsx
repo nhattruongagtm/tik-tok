@@ -39,19 +39,11 @@ export default function SignUpForm(props) {
           repassword: "",
           name: "",
         });
-        localStorage.setItem(
-          "userTiktok",
-          JSON.stringify({
-            username: username,
-            password: password,
-            name: name,
-            nickname: name,
-          })
-        );
+        setTimeout(() => {
+          history.push("/");
+        }, 500);
       });
-      setTimeout(() => {
-        history.push("/");
-      }, 500);
+
     }
   };
   const handleChangeInput = (e) => {

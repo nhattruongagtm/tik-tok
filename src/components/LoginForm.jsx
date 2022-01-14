@@ -1,10 +1,14 @@
-import React, { useState } from "react";
-import { useHistory } from "react-router";
-import { getAllAccount, login } from "../utils/database";
 import md5 from "md5";
+import React, { useState } from "react";
+import { useDispatch } from 'react-redux';
+import { useHistory } from "react-router";
+import USER_KEY from "../constants/key";
+import { getUser } from "../features/session/sessionSlice";
+import { getAllAccount } from "../utils/database";
 
 export default function LoginForm(props) {
   const history = useHistory();
+  const dispatch = useDispatch();
   const [input, setInput] = useState({
     username: "",
     password: "",
@@ -29,10 +33,13 @@ export default function LoginForm(props) {
       const index = users.findIndex((item) => {
         return item.username === username;
       });
-      if (index === -1) {
+      if (index === -1) { 
         alert("Tài khoản không tồn tại!");
       } else if (users[index].password === md5(password)) {
-        localStorage.setItem("userTiktok", JSON.stringify(users[index]));
+
+        localStorage.setItem(USER_KEY, users[index].id);
+        dispatch(getUser(users[index]));
+        
         history.push("/");
       } else {
         alert("Sai mật khẩu, vui lòng thử lại!");

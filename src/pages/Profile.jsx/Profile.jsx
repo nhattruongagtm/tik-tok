@@ -1,260 +1,390 @@
-import { addDoc, collection, getDocs } from "@firebase/firestore";
+import { collection, doc, getDoc, onSnapshot } from "@firebase/firestore";
 import React, { useEffect, useState } from "react";
-import { useHistory } from "react-router";
+import { useDispatch, useSelector } from "react-redux";
+import { useHistory, useLocation } from "react-router";
 import Accounts from "../../components/Accounts";
+import EditProfileForm from "../../components/EditProfileForm";
 import NavigationBottom from "../../components/NavigationBottom";
+import USER_KEY from "../../constants/key";
 import db from "../../firebase/firebase";
-import { getLikedVideosByUser, getPostedVideosByUser } from "../../utils/database";
+import {
+  getLikedVideosByUser,
+  getPostedVideosByUser,
+  getTotalLikes,
+  getUserByID,
+} from "../../utils/database";
 import ProfileVideoItem from "./ProfileVideoItem";
+import { getUser } from "../../features/session/sessionSlice";
 
 export default function Profile() {
+  // *************************** trang profile của các account khác ***************************************
+
+  const user = useSelector((state) => state.session.user);
+
+  const [u, setU] = useState(user);
+
+  const [isDisplayEditForm, setIsDisplayEditForm] = useState(false);
+  const [isLogout, setIsLogout] = useState(false);
+  const profileString = require("query-string");
+  const location = useLocation();
+  const profileID = profileString.parse(location.search).id;
+
   const [tab, setTab] = useState(0);
-  const tabValue = ['posted','liked','hidden'];
+  const tabValue = ["posted", "liked", "hidden"];
   const [displayLogin, setDisplayLogin] = useState(false);
-  const [user,setUser] = useState(()=>{
-    if(localStorage.getItem("userTiktok")){
-      return JSON.parse(localStorage.getItem("userTiktok"))
-    }
-    else{
-      return null;
-    }
-  });
+
   const history = useHistory();
-  const [isLogout,setIsLogout] = useState();
-  const [likedVideos,setLikedVideos] = useState([]);
-  const [postedVideos,setPostedVideos] = useState([]);
-  const [postedHiddenVideos,setPostedHiddenVideos] = useState([]);
+  const [totalLike, setTotalLike] = useState(0);
 
-  useEffect(()=>{
-    if(user !== null){
-      getLikedVideosByUser(user.id).then(res=>{
-        setLikedVideos(res);
-        // console.log(res)
-      })
-    }
-    if(user !== null){
-      getPostedVideosByUser(user.nickName,1).then(res=>{
-        setPostedVideos(res);
-        // console.log(res)
-      })
-    }
-    if(user !== null){
-      getPostedVideosByUser(user.nickName,0).then(res=>{
-        setPostedHiddenVideos(res);
-        // console.log(res)
-      })
-    }
-
-  },[]);
-
+  const [likedVideos, setLikedVideos] = useState([]);
+  const [postedVideos, setPostedVideos] = useState([]);
+  const [postedHiddenVideos, setPostedHiddenVideos] = useState([]);
+  const dispatch = useDispatch();
 
   useEffect(() => {
+    let isCancelled = false;
 
-    const u = localStorage.getItem("userTiktok")
-    ? JSON.parse(localStorage.getItem("userTiktok"))
-    : null;
+    if (user) {
+      const hostUser = doc(collection(db, "users"), user.id);
 
-    setUser(u);
-  }, [isLogout]);
+      onSnapshot(hostUser, (doc) => {
+        if (!isCancelled) {
+          setU({
+            ...doc.data(),
+            id: doc.id,
+          });
+        }
+      });
+    }
+
+    return () => (isCancelled = true);
+  }, []);
+
+  // console.log(user);
+
+  useEffect(() => {
+    if (user !== null) {
+      getLikedVideosByUser(user.id).then((res) => {
+        setLikedVideos(res);
+
+        // console.log("llllll", res);
+      });
+    }
+    if (user !== null) {
+      getPostedVideosByUser(user.id, 1).then((res) => {
+        setPostedVideos(res);
+        // console.log(res)
+      });
+    }
+    if (user !== null) {
+      getPostedVideosByUser(user.id, 0).then((res) => {
+        setPostedHiddenVideos(res);
+        // console.log(res)
+      });
+    }
+    if (user !== null) {
+      getTotalLikes(user.id).then((res) => {
+        setTotalLike(res);
+        console.log(res)
+      });
+    }
+    return () => {
+      setLikedVideos([]);
+      setTotalLike(0);
+      setPostedVideos([]);
+      setPostedHiddenVideos([]);
+    };
+  }, []);
 
   const handleChangeTab = (pos) => {
-    console.log(pos);
+    // console.log(pos);
     setTab(pos);
   };
 
-  async function handleTestFirestore() {
-    const data = {
-      caption: "anh sẽ mãi chờ em....",
-      url: "https://v9.byteicdn.com/0ecdc1bad1029d94a881ed4c445b9e70/616382be/video/tos/useast2a/tos-useast2a-pve-0037-aiso/f4d6b8c80965486dac967f916fe6a961/?a=1180&br=928&bt=464&cd=0%7C0%7C1&ch=0&cr=0&cs=0&cv=1&dr=3&ds=3&er=&ft=98ZmQeAl4kag3&l=202110101817520102450241580037C7CC&lr=tiktok&mime_type=video_mp4&net=0&pl=0&qs=0&rc=MzhmeTo6ZnVoNzMzZjgzM0ApODM2ZTc0PDxmNzs4Zjo8PGdmcHNncjRfcTFgLS1kL2Nzc2IuYzUyX2E1YWE1Y18xYDU6Yw%3D%3D&vl=&vr=",
-      user: "@nhattruongagtmzxc",
-      avatar:
-        "https://fiverr-res.cloudinary.com/images/t_main1,q_auto,f_auto,q_auto,f_auto/gigs/200230552/original/dc6f1db9cefff7f1abda4b54970d6e413bac75f5/draw-a-social-media-avatar-website-profile-pic-custom-user-pic.jpg",
-      like: 25,
-      cmt: 10,
-      share: 2,
-      nameSong: "Chiều nay không có mưa bay...",
-      urlSong: "chieunay.mp3",
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-
-    try {
-      const docRef = addDoc(collection(db, "videos"), data);
-      console.log("Document writen with id: " + (await docRef).id);
-    } catch (error) {
-      console.error(error);
-    }
-  }
-  async function handleGetFireStore() {
-    const querySnapshot = await getDocs(collection(db, "videos"));
-    querySnapshot.forEach((doc) => {
-      // console.log(doc.data());
-    }); 
-  }
-
   const handleProfileMenu = () => {
-    localStorage.getItem("userTiktok") && localStorage.setItem("userTiktok",null);
-    history.push('/profile')
+    localStorage.getItem(USER_KEY) && localStorage.setItem(USER_KEY, null);
+    dispatch(getUser(null));
+
+
+    // save account to list login account
+    handleSaveLogin(user);
+    
     setIsLogout(true);
+
+    // history.push("/profile");
   };
 
-  console.log("l",likedVideos) 
+  const handleSaveLogin = (user) =>{
+    const usersLoggedIn = localStorage.getItem("saveLogin") ? JSON.parse(localStorage.getItem("saveLogin")) : [];
+
+    const index = usersLoggedIn.findIndex(u => u.id === user.id);
+
+    if(index==-1){
+      usersLoggedIn.unshift({
+        ...user,
+        logOutTime: Date.now()
+      });
+      localStorage.setItem("saveLogin",JSON.stringify(usersLoggedIn.reverse()))
+    }
+    else{
+      const cloneUser = usersLoggedIn[index];
+      cloneUser.logOutTime = Date.now();
+      usersLoggedIn.splice(index,1);
+      usersLoggedIn.unshift(cloneUser);
+      localStorage.setItem("saveLogin",JSON.stringify(usersLoggedIn.reverse()));
+     
+    }
+  }
+
+  async function handleUpdateProfile(value) {
+    // console.log("value",value)
+    if (value === true) {
+      // console.log("ok")
+      const userRef = await getDoc(doc(db, "users", user.id));
+
+      const u = userRef.data();
+
+      // setUser(u);
+    }
+  }
+  const handleDisplayEdit = () => {
+    setIsDisplayEditForm(true);
+  };
+  const handleHiddenForm = (value) => {
+    setIsDisplayEditForm(value);
+  };
+
+  // console.log("object")
+
+  // useEffect(()=>{
+
+  //   getUserByID(user.id).then((res)=>{
+  //     if(res){
+  //       // if(res !== user){
+  //         dispatch(getUser(res))
+  //       // }
+  //     }
+  //   })
+
+  //   return ()=>{
+  //     setU(null);
+  //   }
+
+  // },[u]);
+
+  // console.log("liked",likedVideos)
+  // console.log("hidden",postedHiddenVideos)
+  // console.log("post",postedVideos)
 
   return (
     <>
       <div className="profile">
         {!displayLogin && user && (
-          <div className="profile__header">
-            <i className="fas fa-user-plus"></i>
-            {user !== null ? (
-              <div className="profile__change--user">
-                {user.name}
-                <span>
-                  <i className="fas fa-sort-down"></i>
-                </span>
+          <>
+            <div className="profile__header">
+              <i className="fas fa-user-plus"></i>
+              {user !== null ? (
+                <div className="profile__change--user">
+                  {u ? u.name : user.name}
+                  <span>
+                    <i className="fas fa-sort-down"></i>
+                  </span>
+                </div>
+              ) : (
+                <div className="profile__change--user">Hồ sơ</div>
+              )}
+              <label htmlFor="profile__menu">
+                <i className="fas fa-bars"></i>
+              </label>
+              <input id="profile__menu" type="checkbox" hidden />
+              <div className="profile__header--menu">
+                <label
+                  htmlFor="profile__menu"
+                  className="profile__header--menu--item"
+                >
+                  <div>Cài đặt </div>
+                  <i className="fas fa-cog"></i>
+                </label>
+                <label
+                  htmlFor="profile__menu"
+                  className="profile__header--menu--item"
+                >
+                  <div>Ngôn ngữ </div>
+                  <i className="fas fa-globe"></i>
+                </label>
+                <label
+                  htmlFor="profile__menu"
+                  className="profile__header--menu--item"
+                >
+                  <div onClick={handleProfileMenu}>Đăng xuất </div>
+                  <i className="fas fa-sign-out-alt"></i>
+                </label>
               </div>
-            ) : (
-              <div className="profile__change--user">Hồ sơ</div>
-            )}
-            <label htmlFor="profile__menu">
-             
-              <i className="fas fa-bars"></i>
-            </label>
-            <input id="profile__menu" type="checkbox" hidden />
-            <div className="profile__header--menu">
-              <label htmlFor="profile__menu" className="profile__header--menu--item" >
-                <div>Cài đặt </div>
-                <i className="fas fa-cog"></i>
-              </label>
-              <label htmlFor="profile__menu" className="profile__header--menu--item">
-                <div>Ngôn ngữ </div>
-                <i className="fas fa-globe"></i>
-              </label>
-              <label htmlFor="profile__menu" className="profile__header--menu--item">
-                <div onClick={handleProfileMenu}>Đăng xuất </div>
-                <i className="fas fa-sign-out-alt"></i>
-              </label>
+
+              <label
+                htmlFor="profile__menu"
+                className="profile__header--layer"
+              ></label>
             </div>
-            <label
-              htmlFor="profile__menu"
-              className="profile__header--layer"
-            ></label>
-          </div>
-        )}
-        {user !== null ? (
-          <div className="profile__scroll">
-            <div className="profile__main">
-              <div className="profile__main--img">
-                <img
-                  src={user.avatar}
-                  alt=""
+            <div className="profile__edit--main">
+              <input id="edit__profilen" type="checkbox" hidden />
+              {isDisplayEditForm && (
+                <label
+                  htmlFor="edit__profile"
+                  className="profile__layer"
+                  onClick={() => setIsDisplayEditForm(false)}
+                ></label>
+              )}
+
+              {isDisplayEditForm && (
+                <EditProfileForm
+                  user={u ? u :user}
+                  updateProfile={handleUpdateProfile}
+                  displayEditForm={handleHiddenForm}
                 />
-              </div>
-              <div
-                className="profile__main--nickname"
-                onClick={handleTestFirestore}
-              >
-                {user.nickName}
-              </div>
-              <div className="profile__main--info">
-                <div className="profile__main--info--following">
-                  <span>{user.following.length}</span>
-                  <span>Đang follow</span>
-                </div>
-                <div className="profile__main--info--follower">
-                  <span>{user.followers.length}</span>
-                  <span>Follower</span>
-                </div>
-                <div className="profile__main--info--like">
-                  <span>{user.likes}</span>
-                  <span>Thích</span>
-                </div>
-              </div>
-              <div className="profile__main--edit">
-                <div
-                  className="profile__main--edit--first"
-                  onClick={handleGetFireStore}
-                >
-                  Sửa hồ sơ
-                </div>
-                <div className="profile__main--edit--last">
-                  <i className="fas fa-tag"></i>
-                </div>
-              </div>
-              <div className="profile__main--instruction">
-                Nhấn để thêm tiểu sử
-              </div>
+              )}
             </div>
+          </>
+        )}
+        {user ? (
+          <div className="profile__root">
+            <div className="profile__scroll">
+              <div className="profile__main">
+                <div className="profile__main--img">
+                  <img src={u? u.avatar : user.avatar} alt="" />
+                </div>
+                <div className="profile__main--nickname">{u? u.nickName:user.nickName}</div>
 
-            <div className="profile__videos">
-              <div className="profile__videos--tabs">
-                <div
-                  className={
-                    tab === 0
-                      ? "profile__videos--tabs--me active__videos"
-                      : "profile__videos--tabs--me"
-                  }
-                  onClick={() => handleChangeTab(0)}
-                >
-                  <i class="fas fa-user-edit"></i>
+                <div className="profile__main--info">
+                  <div className="profile__main--info--following">
+                    <span>{user !== null && user.following.length}</span>
+                    <span>Đang follow</span>
+                  </div>
+                  <div className="profile__main--info--follower">
+                    <span>{user !== null && user.followers.length}</span>
+                    <span>Follower</span>
+                  </div>
+                  <div className="profile__main--info--like">
+                    <span>{user !== null && totalLike}</span>
+                    <span>Thích</span>
+                  </div>
                 </div>
+
                 <div
-                  className={
-                    tab === 1
-                      ? "profile__videos--tabs--liked active__videos"
-                      : "profile__videos--tabs--liked"
-                  }
-                  onClick={() => handleChangeTab(1)}
+                  className="profile__main--edit"
+                  onClick={handleDisplayEdit}
                 >
-                  <i class="fas fa-user-check"></i>
+                  <label
+                    htmlFor="edit__profile"
+                    className="profile__main--edit--first"
+                  >
+                    Sửa hồ sơ
+                  </label>
+                  <div className="profile__main--edit--last">
+                    <i className="fas fa-tag"></i>
+                  </div>
                 </div>
-                <div
-                  className={
-                    tab === 2
-                      ? "profile__videos--tabs--private active__videos"
-                      : "profile__videos--tabs--private"
-                  }
-                  onClick={() => handleChangeTab(2)}
-                >
-                  <i class="fas fa-user-lock"></i>
+
+                <div className="profile__main--instruction">
+                  Nhấn để thêm tiểu sử
                 </div>
               </div>
 
-              {tab === 0 && (
-                <div className="profile__videos--me--scroll">
-                  <div className="profile__videos--me">
-                    {postedVideos.length > 0 && postedVideos.map((item,index)=>{
-                      return <ProfileVideoItem video={item} key={index} type={tabValue[0]} pos={index}/>
-                    })}
-                   
+              <div className="profile__videos">
+                <div className="profile__videos--tabs">
+                  <div
+                    className={
+                      tab === 0
+                        ? "profile__videos--tabs--me active__videos"
+                        : "profile__videos--tabs--me"
+                    }
+                    onClick={() => handleChangeTab(0)}
+                  >
+                    <i className="fas fa-user-edit"></i>
                   </div>
+
+                  <>
+                    <div
+                      className={
+                        tab === 1
+                          ? "profile__videos--tabs--liked active__videos"
+                          : "profile__videos--tabs--liked"
+                      }
+                      onClick={() => handleChangeTab(1)}
+                    >
+                      <i className="fas fa-user-check"></i>
+                    </div>
+                    <div
+                      className={
+                        tab === 2
+                          ? "profile__videos--tabs--private active__videos"
+                          : "profile__videos--tabs--private"
+                      }
+                      onClick={() => handleChangeTab(2)}
+                    >
+                      <i className="fas fa-user-lock"></i>
+                    </div>
+                  </>
                 </div>
-              )}
-              {tab === 1 && (
-                <div className="profile__videos--me--scroll">
-                  <div className="profile__videos--me"> 
-                  {likedVideos.length > 0 && likedVideos.map((item,index)=>{
-                    return <ProfileVideoItem video={item} key={index} type={tabValue[1]} pos={index}/>
-                  })}
-                    
+
+                {tab === 0 && (
+                  <div className="profile__videos--me--scroll">
+                    <div className="profile__videos--me">
+                      {postedVideos.length > 0 &&
+                        postedVideos.map((item, index) => {
+                          return (
+                            <ProfileVideoItem
+                              video={item}
+                              key={index}
+                              type={tabValue[0]}
+                              pos={index}
+                            />
+                          );
+                        })}
+                    </div>
                   </div>
-                </div>
-              )}
-              {tab === 2 && (
-                <div className="profile__videos--me--scroll">
-                  <div className="profile__videos--me">
-                  {postedHiddenVideos.length > 0 && postedHiddenVideos.map((item,index)=>{
-                      return <ProfileVideoItem video={item} key={index} type={tabValue[2]} pos={index}/>
-                    })}
+                )}
+                {tab === 1 && (
+                  <div className="profile__videos--me--scroll">
+                    <div className="profile__videos--me">
+                      {likedVideos.length > 0 &&
+                        likedVideos.map((item, index) => {
+                          return (
+                            <ProfileVideoItem
+                              video={item}
+                              key={index}
+                              type={tabValue[1]}
+                              pos={index}
+                            />
+                          );
+                        })}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+                {tab === 2 && (
+                  <div className="profile__videos--me--scroll">
+                    <div className="profile__videos--me">
+                      {postedHiddenVideos.length > 0 &&
+                        postedHiddenVideos.map((item, index) => {
+                          return (
+                            <ProfileVideoItem
+                              video={item}
+                              key={index}
+                              type={tabValue[2]}
+                              pos={index}
+                            />
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         ) : (
           <>
             <div className="signup">
-              <i class="far fa-user"></i>
+              <i className="far fa-user"></i>
               <span>Đăng ký tài khoản</span>
               <label
                 htmlFor="signup"
