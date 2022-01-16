@@ -445,7 +445,7 @@ export default function RecordVideo() {
           <div className="post__title">Đăng Video</div>
           <div className="post__label">Nhập tiêu đề:</div>
           <input value={post.caption} onChange={handleCaption} />
-          <video className="post__video" autoPlay loop playsInline>
+          <video className="post__video" autoPlay loop playsInline muted>
             <source type="video/webm" src={blob}></source>
           </video>
           <div className="post__status">
